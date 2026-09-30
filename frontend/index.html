@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PulseGrid BRICS - Federated National Health & Supply Intelligence Grid</title>
+  <!-- Tailwind CSS & Lucide Icons & Leaflet CSS & Chart.js -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            grid: {
+              900: '#060B13',
+              850: '#0C1322',
+              800: '#111B30',
+              750: '#182542',
+              700: '#203257',
+              accent: '#3B82F6',
+              cyan: '#06B6D4',
+              emerald: '#10B981',
+              amber: '#F59E0B',
+              rose: '#F43F5E',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #060B13;
+      color: #E2E8F0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #0C1322;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #203257;
+      border-radius: 4px;
+    }
+    .pulse-ring {
+      display: block;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #F43F5E;
+      cursor: pointer;
+      box-shadow: 0 0 0 rgba(244, 63, 94, 0.4);
+      animation: pulse 1.6s infinite;
+    }
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 16px rgba(244, 63, 94, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(244, 63, 94, 0);
+      }
+    }
+    .leaflet-container {
+      background-color: #0C1322 !important;
+    }
+    .dark-tactical-tiles {
+      filter: brightness(0.62) invert(1) contrast(2.6) hue-rotate(195deg) saturate(0.35) brightness(0.8) !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-grid-900 text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
+
+  <!-- ==================== DEDICATED LOGIN VIEW ==================== -->
+  <div id="login-view" class="min-h-screen flex items-center justify-center p-4 bg-grid-900">
+    <div class="relative w-full max-w-xl bg-grid-850 border border-grid-750 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-blue-500/10 space-y-6">
+      
+      <!-- Top Emblem & Branding -->
+      <div class="text-center space-y-2">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 via-cyan-500 to-emerald-400 p-0.5 shadow-xl shadow-blue-500/25 mx-auto">
+          <div class="w-full h-full bg-grid-900 rounded-[14px] flex items-center justify-center">
+            <i data-lucide="shield-alert" class="w-7 h-7 text-cyan-400 stroke-[2.2]"></i>
+          </div>
+        </div>
+        <div class="inline-block px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-blue-950/80 text-blue-400 border border-blue-800/70">
+          NATIONAL HEALTH COMMAND &amp; EOC AUTHENTICATION
+        </div>
+        <h2 class="text-2xl font-extrabold text-white tracking-tight">PulseGrid <span class="text-cyan-400 font-mono text-xl">BRICS</span></h2>
+        <p class="text-xs text-slate-400 max-w-md mx-auto">
+          Federated Health Resource &amp; Autonomous Supply Chain Management System. Authorized access only.
+        </p>
+      </div>
+
+      <!-- Quick Role Selection Cards -->
+      <div class="space-y-2.5">
+        <label class="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+          <span>Select Operational Clearance &amp; Role</span>
+          <span class="text-cyan-400 font-normal">Click any role to test</span>
+        </label>
+        
+        <div class="grid grid-cols-1 gap-2.5">
+          <!-- Role 1: District Officer -->
+          <div onclick="selectRole('district')" id="role-card-district" class="role-card p-3 rounded-2xl bg-grid-800 border-2 border-cyan-500/80 cursor-pointer hover:border-cyan-400 transition-all flex items-center space-x-3.5">
+            <div class="w-9 h-9 rounded-xl bg-cyan-950/80 border border-cyan-700/60 flex items-center justify-center flex-shrink-0 text-cyan-400">
+              <i data-lucide="stethoscope" class="w-5 h-5"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold text-white">District Health Operations Officer (EOC)</h4>
+                <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">RECOMMENDED</span>
+              </div>
+              <p class="text-[11px] text-slate-400 truncate">Dr. Aarti Sharma • Gadchiroli &amp; Wardha Tribal Emergency Sector</p>
+            </div>
+          </div>
+
+          <!-- Role 2: National Director -->
+          <div onclick="selectRole('national')" id="role-card-national" class="role-card p-3 rounded-2xl bg-grid-800 border-2 border-grid-750 cursor-pointer hover:border-blue-400 transition-all flex items-center space-x-3.5">
+            <div class="w-9 h-9 rounded-xl bg-blue-950/80 border border-blue-700/60 flex items-center justify-center flex-shrink-0 text-blue-400">
+              <i data-lucide="building-2" class="w-5 h-5"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold text-white">National Health Logistics Director</h4>
+                <span class="text-[10px] font-mono text-blue-400">MoHFW Central</span>
+              </div>
+              <p class="text-[11px] text-slate-400 truncate">Dr. Rajesh Kumar • Central Health Depot Command, New Delhi</p>
+            </div>
+          </div>
+
+          <!-- Role 3: BRICS Liaison -->
+          <div onclick="selectRole('brics')" id="role-card-brics" class="role-card p-3 rounded-2xl bg-grid-800 border-2 border-grid-750 cursor-pointer hover:border-purple-400 transition-all flex items-center space-x-3.5">
+            <div class="w-9 h-9 rounded-xl bg-purple-950/80 border border-purple-700/60 flex items-center justify-center flex-shrink-0 text-purple-400">
+              <i data-lucide="globe-2" class="w-5 h-5"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold text-white">BRICS Sovereign Health Liaison</h4>
+                <span class="text-[10px] font-mono text-purple-400">Multilateral DP-Mesh</span>
+              </div>
+              <p class="text-[11px] text-slate-400 truncate">Dr. Carlos Silva • SUS Brazil &amp; India Arogya Grid Coordinator</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Credentials Form -->
+      <form onsubmit="handleFormLogin(event)" class="space-y-3.5">
+        <div>
+          <label class="block text-[11px] font-mono text-slate-400 mb-1">Official Cadre Email / ID</label>
+          <input type="text" id="login-username" value="officer.sharma@nhm.gov.in" class="w-full bg-grid-900 border border-grid-700 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono outline-none focus:border-cyan-400 transition-colors" required>
+        </div>
+        <div>
+          <label class="block text-[11px] font-mono text-slate-400 mb-1">Government Passkey / Biometric MFA Token</label>
+          <input type="password" id="login-password" value="NationalHealth@2026" class="w-full bg-grid-900 border border-grid-700 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono outline-none focus:border-cyan-400 transition-colors" required>
+        </div>
+
+        <button type="submit" id="btn-login-submit" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-cyan-500 to-emerald-500 hover:from-blue-500 hover:to-emerald-400 text-white font-extrabold text-xs shadow-lg shadow-cyan-500/25 flex items-center justify-center space-x-2 transition-all">
+          <i data-lucide="lock" class="w-4 h-4"></i>
+          <span>Authenticate &amp; Enter Command War Room</span>
+        </button>
+      </form>
+
+      <!-- Trust Badges -->
+      <div class="pt-2 border-t border-grid-750 flex items-center justify-between text-[10px] font-mono text-slate-400">
+        <span class="flex items-center"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400 mr-1"></i> 256-Bit TLS</span>
+        <span class="flex items-center"><i data-lucide="lock" class="w-3.5 h-3.5 text-cyan-400 mr-1"></i> DPDP Act 2023 Compliant</span>
+        <span class="flex items-center"><i data-lucide="cpu" class="w-3.5 h-3.5 text-blue-400 mr-1"></i> Gemini 3.8 Flash Secured</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== MAIN APPLICATION WORKSPACE ==================== -->
+  <div id="app-workspace" class="hidden min-h-screen flex flex-col">
+
+  <!-- TOP APP NAV -->
+  <header class="border-b border-grid-750 bg-grid-850/90 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-[1720px] mx-auto px-4 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-cyan-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <i data-lucide="activity" class="w-6 h-6 text-white stroke-[2.5]"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-blue-300 bg-clip-text text-transparent">
+              PulseGrid <span class="text-cyan-400 font-mono text-sm px-2 py-0.5 rounded bg-cyan-950/70 border border-cyan-700/50">BRICS</span>
+            </h1>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-950/80 text-emerald-400 border border-emerald-700/60 animate-pulse">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5"></span> Live Telemetry Grid
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">Federated National-Scale Health Resource & Autonomous Supply Chain Management</p>
+        </div>
+      </div>
+
+      <!-- Quick Status Badges -->
+      <div class="hidden md:flex items-center space-x-6 text-xs font-mono">
+        <div class="flex items-center space-x-2 bg-grid-800/80 px-3 py-1.5 rounded-lg border border-grid-700">
+          <span class="text-slate-400">Model Engine:</span>
+          <span class="text-blue-400 font-bold flex items-center"><i data-lucide="sparkles" class="w-3.5 h-3.5 mr-1 text-amber-400"></i> Gemini 3.8 Flash</span>
+        </div>
+        <div class="flex items-center space-x-2 bg-grid-800/80 px-3 py-1.5 rounded-lg border border-grid-700">
+          <span class="text-slate-400">Privacy Budget:</span>
+          <span class="text-emerald-400 font-bold">ε = 0.42 (DP-FedAvg)</span>
+        </div>
+        <div class="flex items-center space-x-2 bg-grid-800/80 px-3 py-1.5 rounded-lg border border-grid-700">
+          <span class="text-slate-400">Sovereign Export:</span>
+          <span class="text-cyan-400 font-bold">0 Raw Records</span>
+        </div>
+      </div>
+
+      <!-- Authenticated User Profile & Sign Out (Replacing pitch deck and swagger buttons) -->
+      <div class="flex items-center space-x-3" id="nav-user-profile">
+        <div class="flex items-center space-x-2.5 bg-grid-800/90 py-1.5 px-3 rounded-xl border border-grid-700">
+          <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-white text-xs shadow-sm" id="user-avatar-initials">
+            AS
+          </div>
+          <div class="text-left hidden sm:block">
+            <div class="flex items-center space-x-1.5">
+              <span class="text-xs font-bold text-white leading-none" id="user-display-name">Dr. Aarti Sharma</span>
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            </div>
+            <span class="text-[10px] text-cyan-400 font-mono block mt-0.5" id="user-display-role">District Ops Commander (Gadchiroli)</span>
+          </div>
+        </div>
+        <button onclick="handleSignOut()" title="Switch Role / Sign Out" class="p-2 px-2.5 rounded-xl bg-grid-800 hover:bg-rose-950/80 hover:text-rose-400 border border-grid-700 text-slate-300 text-xs font-semibold transition-colors flex items-center space-x-1.5">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+          <span class="hidden md:inline text-[11px]">Sign Out</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- NAVIGATION TABS -->
+    <div class="max-w-[1720px] mx-auto px-4 lg:px-8 flex overflow-x-auto custom-scroll space-x-1 border-t border-grid-800">
+      <button onclick="switchTab('war-room')" id="tab-war-room" class="tab-btn px-4 py-2.5 text-xs font-bold border-b-2 border-cyan-400 text-cyan-400 flex items-center space-x-2 whitespace-nowrap transition-colors">
+        <i data-lucide="map-pin" class="w-4 h-4"></i>
+        <span>Command War Room & GIS Map</span>
+      </button>
+      <button onclick="switchTab('redistribution')" id="tab-redistribution" class="tab-btn px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2 whitespace-nowrap transition-colors">
+        <i data-lucide="truck" class="w-4 h-4"></i>
+        <span>Autonomous Redistribution (<span id="manifest-badge" class="text-rose-400 font-bold">4</span>)</span>
+      </button>
+      <button onclick="switchTab('forecasting')" id="tab-forecasting" class="tab-btn px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2 whitespace-nowrap transition-colors">
+        <i data-lucide="trending-up" class="w-4 h-4"></i>
+        <span>Predictive Demand & Surge AI</span>
+      </button>
+      <button onclick="switchTab('federated')" id="tab-federated" class="tab-btn px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2 whitespace-nowrap transition-colors">
+        <i data-lucide="globe" class="w-4 h-4"></i>
+        <span>BRICS Sovereign Mesh</span>
+      </button>
+      <button onclick="switchTab('copilot')" id="tab-copilot" class="tab-btn px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2 whitespace-nowrap transition-colors">
+        <i data-lucide="bot" class="w-4 h-4 text-purple-400"></i>
+        <span>Gemini 3.8 Flash Triage Copilot</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- METRIC TICKER RIBBON -->
+  <section class="bg-grid-850 border-b border-grid-800 py-3">
+    <div class="max-w-[1720px] mx-auto px-4 lg:px-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div class="bg-grid-800/60 p-3 rounded-xl border border-grid-750">
+        <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">PHCs Monitored</p>
+        <div class="flex items-baseline space-x-2 mt-1">
+          <span class="text-xl font-extrabold text-white font-mono" id="stat-total-phcs">28,412</span>
+          <span class="text-[10px] text-emerald-400 font-medium">10 Live in View</span>
+        </div>
+      </div>
+      <div class="bg-grid-800/60 p-3 rounded-xl border border-grid-750">
+        <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Critical Stock-Outs</p>
+        <div class="flex items-baseline space-x-2 mt-1">
+          <span class="text-xl font-extrabold text-rose-400 font-mono" id="stat-critical-count">3</span>
+          <span class="text-[10px] text-rose-300 bg-rose-950/80 px-1.5 py-0.5 rounded border border-rose-800/60">Runway &lt; 2 Days</span>
+        </div>
+      </div>
+      <div class="bg-grid-800/60 p-3 rounded-xl border border-grid-750">
+        <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Auto-Reallocations Ready</p>
+        <div class="flex items-baseline space-x-2 mt-1">
+          <span class="text-xl font-extrabold text-amber-400 font-mono" id="stat-proposals-count">4</span>
+          <span class="text-[10px] text-slate-300">100% Solvable</span>
+        </div>
+      </div>
+      <div class="bg-grid-800/60 p-3 rounded-xl border border-grid-750">
+        <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Bed Occupancy Rate</p>
+        <div class="flex items-baseline space-x-2 mt-1">
+          <span class="text-xl font-extrabold text-white font-mono">78.4%</span>
+          <span class="text-[10px] text-amber-400">13 ICU occupied</span>
+        </div>
+      </div>
+      <div class="bg-grid-800/60 p-3 rounded-xl border border-grid-750">
+        <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Doctor On-Duty Rate</p>
+        <div class="flex items-baseline space-x-2 mt-1">
+          <span class="text-xl font-extrabold text-emerald-400 font-mono">89.2%</span>
+          <span class="text-[10px] text-slate-400">Rural biometric sync</span>
+        </div>
+      </div>
+      <div class="bg-grid-800/60 p-3 rounded-xl border border-grid-750">
+        <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">BRICS Global Accuracy</p>
+        <div class="flex items-baseline space-x-2 mt-1">
+          <span class="text-xl font-extrabold text-cyan-400 font-mono" id="stat-brics-acc">94.6%</span>
+          <span class="text-[10px] text-cyan-300">Round #142</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN VIEWPORT CONTAINER -->
+  <main class="flex-1 max-w-[1720px] w-full mx-auto p-4 lg:p-8">
+
+    <!-- ==================== TAB 1: COMMAND WAR ROOM ==================== -->
+    <div id="view-war-room" class="tab-view space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[720px]">
+
+        <!-- Left: Interactive Geospatial GIS Map -->
+        <div class="lg:col-span-8 flex flex-col bg-grid-850 rounded-2xl border border-grid-750 overflow-hidden shadow-xl">
+          <div class="p-4 border-b border-grid-750 bg-grid-800/80 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="map" class="w-5 h-5 text-cyan-400"></i>
+              <h2 class="font-bold text-sm tracking-wide">National Primary Health Centre Geospatial Command Mesh</h2>
+            </div>
+            <div class="flex items-center space-x-3 text-xs">
+              <span class="flex items-center text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 mr-1.5 animate-ping"></span> Critical Shortage (&lt;3d)</span>
+              <span class="flex items-center text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 mr-1.5"></span> Warning Buffer</span>
+              <span class="flex items-center text-slate-300"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1.5"></span> Stable / Depot</span>
+            </div>
+          </div>
+          <!-- Leaflet Map Container -->
+          <div id="map" class="flex-1 w-full relative"></div>
+          <div class="p-3 bg-grid-850 border-t border-grid-750 text-xs text-slate-400 flex items-center justify-between">
+            <span>Click any node marker to load live inventory, patient surge alerts, and clinical staffing dossier.</span>
+            <span class="font-mono text-cyan-400">Map GPS: India Centered (MH / UP / KL)</span>
+          </div>
+        </div>
+
+        <!-- Right: Real-Time Facility Dossier Inspector -->
+        <div class="lg:col-span-4 flex flex-col bg-grid-850 rounded-2xl border border-grid-750 overflow-hidden shadow-xl">
+          <div class="p-4 border-b border-grid-750 bg-grid-800/80 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="clipboard-list" class="w-5 h-5 text-blue-400"></i>
+              <h3 class="font-bold text-sm tracking-wide">Facility Telemetry Dossier</h3>
+            </div>
+            <span id="selected-badge" class="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-rose-950 text-rose-400 border border-rose-800">CRITICAL</span>
+          </div>
+
+          <div class="p-5 flex-1 overflow-y-auto custom-scroll space-y-5" id="facility-detail-container">
+            <!-- Facility header -->
+            <div>
+              <h4 id="detail-name" class="text-lg font-extrabold text-white">PHC Bhamragad (Tribal Belt)</h4>
+              <p id="detail-meta" class="text-xs text-slate-400 font-mono mt-0.5">District: Gadchiroli • Maharashtra • ID: PHC-MH-GAD-01</p>
+            </div>
+
+            <!-- Outbreak / Surge Alert Box -->
+            <div id="detail-surge-box" class="p-3.5 rounded-xl bg-rose-950/40 border border-rose-800/60 text-xs">
+              <div class="flex items-center space-x-2 text-rose-300 font-bold mb-1">
+                <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400"></i>
+                <span>Outbreak &amp; Surge Anomaly Detected</span>
+              </div>
+              <p id="detail-surge-reason" class="text-slate-300 leading-relaxed">
+                Post-Monsoon Snakebite &amp; Viral Fever Outbreak. Daily patient footfall is 184 (vs. 7-day baseline 95).
+              </p>
+            </div>
+
+            <!-- Operational Metrics Grid -->
+            <div class="grid grid-cols-2 gap-3 text-xs font-mono">
+              <div class="p-3 bg-grid-800 rounded-xl border border-grid-750">
+                <span class="text-slate-400">Bed Occupancy</span>
+                <p id="detail-beds" class="text-sm font-bold text-white mt-1">11 / 12 (91.6%)</p>
+                <span class="text-[10px] text-amber-400">Maternity: 4/4 Full</span>
+              </div>
+              <div class="p-3 bg-grid-800 rounded-xl border border-grid-750">
+                <span class="text-slate-400">Staff On Duty</span>
+                <p id="detail-staff" class="text-sm font-bold text-emerald-400 mt-1">1 Doc • 3 Nurses</p>
+                <span class="text-[10px] text-slate-400">1 Pharmacist active</span>
+              </div>
+            </div>
+
+            <!-- Live Medicine Inventory Status -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <h5 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Critical Emergency Medicines</h5>
+                <span class="text-[11px] text-slate-400 font-mono">Stock / Runway Days</span>
+              </div>
+              <div id="detail-inventory-list" class="space-y-2.5">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+
+            <!-- Quick Action button -->
+            <button onclick="requestEmergencyTriage()" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-lg shadow-blue-500/25 transition-all">
+              <i data-lucide="bot" class="w-4 h-4"></i>
+              <span>Generate Gemini 3.8 Flash Emergency Triage Brief</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 2: AUTONOMOUS REDISTRIBUTION ==================== -->
+    <div id="view-redistribution" class="tab-view hidden space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-grid-850 p-5 rounded-2xl border border-grid-750">
+        <div>
+          <div class="flex items-center space-x-2">
+            <i data-lucide="shuffle" class="w-5 h-5 text-amber-400"></i>
+            <h2 class="text-lg font-bold text-white">Cross-District Resource Redistribution Optimizer</h2>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">
+            Algorithmic priority solver matching critical deficit PHCs (&lt;3 days runway) with nearest surplus depots (&gt;10 days buffer) while protecting donor resilience.
+          </p>
+        </div>
+        <div class="flex items-center space-x-3">
+          <button onclick="loadRedistributionPlan()" class="px-3.5 py-2 rounded-xl bg-grid-800 hover:bg-grid-750 border border-grid-700 text-xs font-semibold text-slate-300 flex items-center space-x-1.5 transition-colors">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>Re-Optimize Network</span>
+          </button>
+          <button onclick="authorizeAllManifests()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center space-x-1.5 shadow-lg shadow-emerald-600/25 transition-all">
+            <i data-lucide="check-check" class="w-4 h-4"></i>
+            <span>Authorize All 4 Dispatches</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Transfer Manifest Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5" id="proposals-container">
+        <!-- Rendered via JavaScript -->
+      </div>
+
+      <!-- Dispatched History Section -->
+      <div class="bg-grid-850 rounded-2xl border border-grid-750 p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+            <i data-lucide="history" class="w-4 h-4 text-blue-400"></i>
+            <span>Active &amp; Dispatched Resource Logistics Transits</span>
+          </h3>
+          <span id="dispatched-count-badge" class="text-xs font-mono text-cyan-400">0 Dispatches In-Flight</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-grid-800 text-slate-400 uppercase font-mono text-[10px] tracking-wider">
+              <tr>
+                <th class="p-3">Manifest ID</th>
+                <th class="p-3">Emergency Medicine</th>
+                <th class="p-3">Quantity</th>
+                <th class="p-3">From (Donor)</th>
+                <th class="p-3">To (Recipient)</th>
+                <th class="p-3">Modality</th>
+                <th class="p-3">Est. ETA</th>
+                <th class="p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody id="dispatched-table-body" class="divide-y divide-grid-800 text-slate-300 font-mono">
+              <tr>
+                <td colspan="8" class="p-4 text-center text-slate-500 italic">No manifests dispatched yet in this session. Click "Authorize Dispatch" above to launch.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 3: PREDICTIVE FORECASTING ==================== -->
+    <div id="view-forecasting" class="tab-view hidden space-y-6">
+      <div class="bg-grid-850 p-6 rounded-2xl border border-grid-750 space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <i data-lucide="line-chart" class="w-5 h-5 text-cyan-400"></i>
+              <h2 class="text-lg font-bold text-white">7-Day Outbreak Horizon &amp; Stock-Depletion Forecasting</h2>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">
+              Co-trained with BRICS epidemiological gradient curves to anticipate stock-out timelines before and after PulseGrid reallocations.
+            </p>
+          </div>
+          <div class="flex items-center space-x-3">
+            <label class="text-xs text-slate-400">Target PHC:</label>
+            <select id="forecast-phc-select" onchange="loadForecastData()" class="bg-grid-800 border border-grid-700 text-white text-xs rounded-xl px-3 py-2 outline-none">
+              <option value="PHC-MH-GAD-01">PHC Bhamragad (Tribal Belt - Snakebite)</option>
+              <option value="PHC-UP-VAR-01">PHC Chiraigaon (Varanasi - Dengue)</option>
+              <option value="PHC-KL-WAY-01">PHC Meppadi (Wayanad - Flood Trauma)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Chart Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Antivenom / Primary Chart -->
+          <div class="p-4 bg-grid-800/80 rounded-xl border border-grid-750 flex flex-col">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-xs text-slate-200" id="chart-1-title">Polyvalent Snake Antivenom: Stock Depletion Curve</h3>
+              <span class="text-[11px] font-mono text-rose-400 bg-rose-950 px-2 py-0.5 rounded border border-rose-800">Without Intervention: Depletion Tomorrow</span>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="chartAntivenom"></canvas>
+            </div>
+            <div class="mt-3 flex items-center justify-around text-xs font-mono text-slate-400 border-t border-grid-700 pt-2">
+              <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-rose-500 mr-1.5"></span> Without Reallocation (Stock-Out)</span>
+              <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-emerald-500 mr-1.5"></span> With PulseGrid Transfer (+40 Vials)</span>
+            </div>
+          </div>
+
+          <!-- Paracetamol IV Chart -->
+          <div class="p-4 bg-grid-800/80 rounded-xl border border-grid-750 flex flex-col">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-xs text-slate-200" id="chart-2-title">Paracetamol IV Infusion 100ml: Outbreak Consumption Demand</h3>
+              <span class="text-[11px] font-mono text-amber-400 bg-amber-950 px-2 py-0.5 rounded border border-amber-800">Daily Demand: 30–35 Bottles</span>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="chartParacetamol"></canvas>
+            </div>
+            <div class="mt-3 flex items-center justify-around text-xs font-mono text-slate-400 border-t border-grid-700 pt-2">
+              <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-rose-500 mr-1.5"></span> Baseline Exhaustion (Day 2)</span>
+              <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-cyan-500 mr-1.5"></span> Buffer Extended to Day 8+</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Key Epidemiological Observations -->
+        <div class="p-4 bg-grid-800 rounded-xl border border-grid-750 space-y-2">
+          <h4 class="text-xs font-bold text-slate-300 flex items-center space-x-2">
+            <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+            <span>Gemini 3.8 Flash Epidemiological Anomaly Analysis</span>
+          </h4>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            The model detected a 2.4-sigma divergence in IV Antipyretic burn rates across riverside settlements. By correlating historical water-level receding data with outpatient triage logs, the platform projects peak infection hospitalization in 96 hours. Automated pre-allocation orders protect 42,000 vulnerable citizens from stock-outs.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 4: BRICS FEDERATED MESH ==================== -->
+    <div id="view-federated" class="tab-view hidden space-y-6">
+      <div class="bg-grid-850 p-6 rounded-2xl border border-grid-750 space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i>
+              <h2 class="text-lg font-bold text-white">BRICS Sovereign Health Cooperation Mesh</h2>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">
+              Cooperative predictive modeling with Zero-Knowledge Differential Privacy (DP-FedAvg). National patient records remain 100% within sovereign territorial borders.
+            </p>
+          </div>
+          <button onclick="triggerFederatedRound()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold flex items-center space-x-2 shadow-lg shadow-indigo-500/25 transition-all">
+            <i data-lucide="cpu" class="w-4 h-4"></i>
+            <span>Trigger Federated Round (<span id="mesh-round-counter">#142</span>)</span>
+          </button>
+        </div>
+
+        <!-- Privacy & Compliance Banner -->
+        <div class="p-4 rounded-xl bg-emerald-950/30 border border-emerald-800/60 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div class="flex items-center space-x-2 text-emerald-300 font-bold">
+            <i data-lucide="lock" class="w-4 h-4 text-emerald-400"></i>
+            <span>Differential Privacy Formal Guarantee: (ε = 0.42, δ = 10⁻⁵)</span>
+          </div>
+          <div class="flex items-center space-x-4 text-slate-400 font-mono text-[11px]">
+            <span>✓ India DPDP Act 2023 Compliant</span>
+            <span>✓ Brazil LGPD Compliant</span>
+            <span>✓ South Africa POPIA Compliant</span>
+          </div>
+        </div>
+
+        <!-- Country Nodes Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="brics-nodes-container">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Shared Cross-Border Intelligence Section -->
+        <div class="bg-grid-800/80 rounded-xl p-5 border border-grid-750 space-y-4">
+          <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center space-x-2">
+            <i data-lucide="git-merge" class="w-4 h-4 text-cyan-400"></i>
+            <span>Shared Epidemiological Intelligence Insights</span>
+          </h3>
+          <div id="brics-insights-container" class="space-y-3">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 5: GEMINI 3.8 FLASH COPILOT ==================== -->
+    <div id="view-copilot" class="tab-view hidden space-y-6">
+      <div class="bg-grid-850 rounded-2xl border border-grid-750 flex flex-col h-[700px] shadow-2xl overflow-hidden">
+        <!-- Copilot Header -->
+        <div class="p-4 border-b border-grid-750 bg-grid-800/90 flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center shadow-md shadow-purple-500/20">
+              <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+            </div>
+            <div>
+              <h3 class="font-extrabold text-sm text-white">PulseGrid Tactical AI Copilot</h3>
+              <p class="text-[11px] text-slate-400">Powered by Gemini 3.8 Flash • Sub-second Clinical Supply &amp; Triage Reasoning</p>
+            </div>
+          </div>
+          <span class="px-2.5 py-1 rounded-full text-[11px] font-mono bg-blue-950 text-blue-300 border border-blue-800/80">
+            System Instructions: Ready
+          </span>
+        </div>
+
+        <!-- Quick Scenario Chips -->
+        <div class="p-3 bg-grid-800/60 border-b border-grid-750 flex items-center gap-2 overflow-x-auto custom-scroll text-xs">
+          <span class="text-slate-400 font-mono text-[11px] whitespace-nowrap">Suggested Scenarios:</span>
+          <button onclick="setQuery('Triage snakebite antivenom deficit at PHC Bhamragad and recommend emergency dispatch')" class="px-3 py-1.5 rounded-lg bg-grid-750 hover:bg-grid-700 text-slate-200 border border-grid-700 whitespace-nowrap transition-colors">
+            🚨 Gadchiroli Snakebite Deficit
+          </button>
+          <button onclick="setQuery('Analyze Ganges Basin Dengue spike in Varanasi and authorize IV Paracetamol reallocation')" class="px-3 py-1.5 rounded-lg bg-grid-750 hover:bg-grid-700 text-slate-200 border border-grid-700 whitespace-nowrap transition-colors">
+            🦟 Varanasi Dengue Outbreak
+          </button>
+          <button onclick="setQuery('Assess overall network bed occupancy and evaluate oxygen cylinder buffer thresholds')" class="px-3 py-1.5 rounded-lg bg-grid-750 hover:bg-grid-700 text-slate-200 border border-grid-700 whitespace-nowrap transition-colors">
+            🛏️ Oxygen &amp; ICU Bed Resilience
+          </button>
+          <button onclick="setQuery('Review BRICS federated learning insights regarding tropical disease supply correlation')" class="px-3 py-1.5 rounded-lg bg-grid-750 hover:bg-grid-700 text-slate-200 border border-grid-700 whitespace-nowrap transition-colors">
+            🌐 BRICS Cross-Border Correlation
+          </button>
+        </div>
+
+        <!-- Chat Conversation Area -->
+        <div id="chat-messages" class="flex-1 p-5 overflow-y-auto custom-scroll space-y-4 text-xs">
+          <div class="flex items-start space-x-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-blue-500 flex-shrink-0 flex items-center justify-center">
+              <i data-lucide="bot" class="w-4 h-4 text-white"></i>
+            </div>
+            <div class="bg-grid-800 p-4 rounded-2xl rounded-tl-none border border-grid-750 max-w-[85%] text-slate-200 leading-relaxed space-y-2">
+              <p class="font-bold text-blue-400">Greetings, Public Health Operations Commander.</p>
+              <p>I am your **PulseGrid Tactical Logistics Copilot** powered by **Gemini 3.8 Flash**. I am continuously ingesting real-time telemetry from across 28,412 Primary Health Centres, cold-chain depots, and BRICS federated learning nodes.</p>
+              <p>Select a scenario chip above or type any operational request to generate immediate emergency triage briefs, authorized transfer manifests, and outbreak forecasts.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Input Form -->
+        <form onsubmit="submitQuery(event)" class="p-4 bg-grid-800/90 border-t border-grid-750 flex items-center space-x-3">
+          <input type="text" id="copilot-input" placeholder="Ask Gemini 3.8 Flash: e.g. 'Generate transfer manifest for PHC Bhamragad'..." class="flex-1 bg-grid-900 border border-grid-700 rounded-xl px-4 py-3 text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500 transition-colors">
+          <button type="submit" id="copilot-send-btn" class="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center space-x-2 shadow-lg shadow-blue-600/25 transition-all">
+            <span>Send Request</span>
+            <i data-lucide="send" class="w-4 h-4"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </main>
+  </div> <!-- /app-workspace -->
+
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <script>
+    // State variables
+    let phcData = null;
+    let selectedFacilityId = 'PHC-MH-GAD-01';
+    let mapInstance = null;
+    let markersLayer = null;
+    let chartAntivenomInstance = null;
+    let chartParacetamolInstance = null;
+
+    // Available Roles Registry
+    const ROLES = {
+      district: {
+        id: 'district',
+        name: 'Dr. Aarti Sharma',
+        role: 'District Ops Commander (Gadchiroli)',
+        email: 'officer.sharma@nhm.gov.in',
+        initials: 'AS',
+        jurisdiction: 'Gadchiroli & Wardha Emergency Operations'
+      },
+      national: {
+        id: 'national',
+        name: 'Dr. Rajesh Kumar',
+        role: 'National Health Supply Director',
+        email: 'dir.kumar@mohfw.gov.in',
+        initials: 'RK',
+        jurisdiction: 'MoHFW Central Command, New Delhi'
+      },
+      brics: {
+        id: 'brics',
+        name: 'Dr. Carlos Silva',
+        role: 'BRICS Sovereign Health Liaison',
+        email: 'carlos.silva@saude.gov.br',
+        initials: 'CS',
+        jurisdiction: 'Multilateral DP-FedAvg Mesh Operations'
+      }
+    };
+
+    let selectedRoleKey = 'district';
+
+    function selectRole(roleKey) {
+      selectedRoleKey = roleKey;
+      document.querySelectorAll('.role-card').forEach(c => {
+        c.classList.remove('border-cyan-500/80', 'border-blue-400', 'border-purple-400');
+        c.classList.add('border-grid-750');
+      });
+
+      const card = document.getElementById(`role-card-${roleKey}`);
+      if (card) {
+        card.classList.remove('border-grid-750');
+        if (roleKey === 'district') card.classList.add('border-cyan-500/80');
+        if (roleKey === 'national') card.classList.add('border-blue-400');
+        if (roleKey === 'brics') card.classList.add('border-purple-400');
+      }
+
+      const roleObj = ROLES[roleKey];
+      if (roleObj) {
+        document.getElementById('login-username').value = roleObj.email;
+      }
+    }
+
+    function handleFormLogin(e) {
+      if (e) e.preventDefault();
+      const role = ROLES[selectedRoleKey] || ROLES.district;
+      localStorage.setItem('pulsegrid_user', JSON.stringify(role));
+      applyUserSession(role);
+
+      document.getElementById('login-view').classList.add('hidden');
+      const ws = document.getElementById('app-workspace');
+      ws.classList.remove('hidden');
+
+      if (!mapInstance) {
+        initMap();
+        fetchNetworkData();
+        loadRedistributionPlan();
+        loadFederatedMesh();
+      } else {
+        setTimeout(() => mapInstance.invalidateSize(), 200);
+      }
+    }
+
+    function handleSignOut() {
+      localStorage.removeItem('pulsegrid_user');
+      document.getElementById('app-workspace').classList.add('hidden');
+      document.getElementById('login-view').classList.remove('hidden');
+    }
+
+    function applyUserSession(user) {
+      document.getElementById('user-avatar-initials').innerText = user.initials;
+      document.getElementById('user-display-name').innerText = user.name;
+      document.getElementById('user-display-role').innerText = user.role;
+    }
+
+    // Tab switcher
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-cyan-400', 'text-cyan-400');
+        btn.classList.add('border-transparent', 'text-slate-400');
+      });
+
+      const activeView = document.getElementById(`view-${tabName}`);
+      const activeBtn = document.getElementById(`tab-${tabName}`);
+      if (activeView) activeView.classList.remove('hidden');
+      if (activeBtn) {
+        activeBtn.classList.remove('border-transparent', 'text-slate-400');
+        activeBtn.classList.add('border-cyan-400', 'text-cyan-400');
+      }
+
+      if (tabName === 'war-room' && mapInstance) {
+        setTimeout(() => mapInstance.invalidateSize(), 200);
+      }
+      if (tabName === 'forecasting') {
+        loadForecastData();
+      }
+    }
+
+    // Initialize Leaflet Map (Using OpenStreetMap with dark tactical filter - ZERO WATERMARK)
+    function initMap() {
+      if (mapInstance) return;
+      mapInstance = L.map('map', {
+        zoomControl: true,
+        attributionControl: false
+      }).setView([20.4, 78.9], 6);
+
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        className: 'dark-tactical-tiles'
+      }).addTo(mapInstance);
+
+      markersLayer = L.layerGroup().addTo(mapInstance);
+    }
+
+    // Load PHC Network Data
+    async function fetchNetworkData() {
+      try {
+        const res = await fetch('/api/phcs');
+        phcData = await res.json();
+        renderMapMarkers();
+        updateTopStats();
+        renderFacilityDetail(selectedFacilityId);
+      } catch (err) {
+        console.error("Error fetching PHC data:", err);
+      }
+    }
+
+    function updateTopStats() {
+      if (!phcData) return;
+      document.getElementById('stat-critical-count').innerText = phcData.critical_stockouts_count;
+    }
+
+    // Render Markers on Map
+    function renderMapMarkers() {
+      if (!markersLayer || !phcData) return;
+      markersLayer.clearLayers();
+
+      phcData.facility_reports.forEach(fac => {
+        const coords = [fac.coordinates.lat, fac.coordinates.lng];
+        let colorClass = '#10B981';
+        let pulseClass = '';
+
+        if (fac.overall_status === 'CRITICAL') {
+          colorClass = '#F43F5E';
+          pulseClass = 'pulse-ring';
+        } else if (fac.overall_status === 'WARNING') {
+          colorClass = '#F59E0B';
+        }
+
+        const customIcon = L.divIcon({
+          className: 'custom-map-pin',
+          html: `<div class="${pulseClass}" style="background-color: ${colorClass}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid #ffffff;"></div>`,
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
+        });
+
+        const marker = L.marker(coords, { icon: customIcon }).addTo(markersLayer);
+
+        marker.bindTooltip(`
+          <div class="text-xs p-1 font-sans">
+            <p class="font-bold text-white">${fac.facility_name}</p>
+            <p class="text-[10px] text-slate-300">${fac.district} • Status: <span style="color: ${colorClass}; font-weight: bold;">${fac.overall_status}</span></p>
+          </div>
+        `, { direction: 'top', className: 'bg-grid-850 text-white border border-grid-700 rounded-lg' });
+
+        marker.on('click', () => {
+          selectedFacilityId = fac.facility_id;
+          renderFacilityDetail(fac.facility_id);
+          mapInstance.panTo(coords);
+        });
+      });
+    }
+
+    // Render selected facility dossier
+    function renderFacilityDetail(facId) {
+      if (!phcData) return;
+      const fac = phcData.facility_reports.find(f => f.facility_id === facId) || phcData.facility_reports[0];
+      if (!fac) return;
+
+      document.getElementById('detail-name').innerText = fac.facility_name;
+      document.getElementById('detail-meta').innerText = `District: ${fac.district} • ${fac.state} • ${fac.facility_type} • ID: ${fac.facility_id}`;
+
+      const badge = document.getElementById('selected-badge');
+      if (fac.overall_status === 'CRITICAL') {
+        badge.className = 'px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-rose-950 text-rose-400 border border-rose-800';
+        badge.innerText = 'CRITICAL DEFICIT';
+      } else if (fac.overall_status === 'WARNING') {
+        badge.className = 'px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-amber-950 text-amber-400 border border-amber-800';
+        badge.innerText = 'WARNING BUFFER';
+      } else {
+        badge.className = 'px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800';
+        badge.innerText = 'HEALTHY / BUFFER';
+      }
+
+      const surgeBox = document.getElementById('detail-surge-box');
+      if (fac.footfall.surge_detected) {
+        surgeBox.classList.remove('hidden');
+        document.getElementById('detail-surge-reason').innerText = `${fac.footfall.surge_reason} Today's footfall: ${fac.footfall.today} (vs 7-day average: ${fac.footfall.seven_day_avg}).`;
+      } else {
+        surgeBox.classList.add('hidden');
+      }
+
+      document.getElementById('detail-beds').innerText = `${fac.beds.occupied} / ${fac.beds.total} (${Math.round((fac.beds.occupied / fac.beds.total) * 100)}%)`;
+      document.getElementById('detail-staff').innerText = `${fac.staff.doctors_on_duty} Doc • ${fac.staff.nurses_on_duty} Nurses • ${fac.staff.pharmacists_on_duty} Pharm`;
+
+      const invList = document.getElementById('detail-inventory-list');
+      invList.innerHTML = '';
+
+      fac.medicines.forEach(m => {
+        let barColor = 'bg-emerald-500';
+        let textColor = 'text-emerald-400';
+        if (m.status === 'CRITICAL') {
+          barColor = 'bg-rose-500';
+          textColor = 'text-rose-400 font-bold';
+        } else if (m.status === 'WARNING') {
+          barColor = 'bg-amber-500';
+          textColor = 'text-amber-400';
+        }
+
+        const pct = Math.min(100, Math.round((m.runway_days / 14) * 100));
+
+        invList.innerHTML += `
+          <div class="p-2.5 rounded-xl bg-grid-800 border border-grid-750">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-200 font-medium">${m.med_name} ${m.cold_chain ? '<span class="text-[10px] text-cyan-400 font-mono">❄️ 2-8°C</span>' : ''}</span>
+              <span class="${textColor} font-mono">${m.stock} ${m.unit} (${m.runway_days}d runway)</span>
+            </div>
+            <div class="w-full bg-grid-900 h-1.5 rounded-full overflow-hidden mt-1.5">
+              <div class="${barColor} h-full rounded-full transition-all" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // Load redistribution plans
+    async function loadRedistributionPlan() {
+      try {
+        const res = await fetch('/api/redistribution/plan');
+        const data = await res.json();
+        const container = document.getElementById('proposals-container');
+        container.innerHTML = '';
+
+        document.getElementById('manifest-badge').innerText = data.plan.length;
+        document.getElementById('stat-proposals-count').innerText = data.plan.length;
+
+        data.plan.forEach(item => {
+          container.innerHTML += `
+            <div class="p-5 rounded-2xl bg-grid-850 border border-grid-750 flex flex-col justify-between space-y-4 shadow-lg hover:border-blue-500/50 transition-all">
+              <div>
+                <div class="flex items-center justify-between">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold ${item.priority === 'HIGH' ? 'bg-rose-950 text-rose-400 border border-rose-800' : 'bg-amber-950 text-amber-400 border border-amber-800'}">
+                    ${item.priority} PRIORITY
+                  </span>
+                  <span class="text-xs font-mono text-slate-400">${item.id}</span>
+                </div>
+                <h4 class="text-sm font-bold text-white mt-2">${item.medicine.name}</h4>
+                <p class="text-xs text-slate-400">Transfer Allocation: <span class="text-emerald-400 font-mono font-bold">${item.transfer_quantity} ${item.medicine.unit}</span></p>
+
+                <!-- Donor vs Recipient Route -->
+                <div class="mt-4 p-3 bg-grid-800 rounded-xl border border-grid-750 text-xs space-y-2 font-mono">
+                  <div class="flex items-center justify-between">
+                    <span class="text-slate-400">Donor (Surplus):</span>
+                    <span class="text-slate-200 font-semibold">${item.donor.name}</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-slate-400">Recipient (Deficit):</span>
+                    <span class="text-rose-400 font-semibold">${item.recipient.name}</span>
+                  </div>
+                  <div class="flex items-center justify-between border-t border-grid-700 pt-2 text-[11px]">
+                    <span class="text-slate-400">Runway Extension:</span>
+                    <span class="text-emerald-400 font-bold">${item.recipient.current_runway_days}d ➔ ${item.recipient.projected_runway_days}d Safe Buffer</span>
+                  </div>
+                </div>
+
+                <!-- Logistics Telemetry -->
+                <div class="mt-3 flex items-center justify-between text-[11px] font-mono text-slate-400">
+                  <span>Transit: ${item.distance_km} km (${item.estimated_transit_hours} hrs)</span>
+                  <span class="text-cyan-400">${item.recommended_transport.split('(')[0]}</span>
+                </div>
+              </div>
+
+              <button onclick="authorizeDispatch('${item.id}')" class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-md shadow-blue-600/25 transition-all">
+                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                <span>Authorize &amp; Dispatch Transfer Manifest</span>
+              </button>
+            </div>
+          `;
+        });
+
+        lucide.createIcons();
+      } catch (err) {
+        console.error("Error loading redistribution:", err);
+      }
+    }
+
+    // Authorize individual dispatch
+    async function authorizeDispatch(manifestId) {
+      try {
+        const res = await fetch('/api/redistribution/dispatch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            manifest_id: manifestId,
+            approver_name: "Dr. A. Sharma (Chief Medical Officer)"
+          })
+        });
+        const result = await res.json();
+        alert(`✓ Manifest ${manifestId} officially authorized!\nEmergency transport dispatched.`);
+        loadRedistributionPlan();
+        updateDispatchedTable(result.record);
+      } catch (err) {
+        console.error("Dispatch authorization failed:", err);
+      }
+    }
+
+    function authorizeAllManifests() {
+      authorizeDispatch("REC-GAD-01-MED_AN");
+    }
+
+    function updateDispatchedTable(record) {
+      const tbody = document.getElementById('dispatched-table-body');
+      if (tbody.innerHTML.includes('No manifests dispatched yet')) {
+        tbody.innerHTML = '';
+      }
+      tbody.innerHTML = `
+        <tr class="hover:bg-grid-800/50">
+          <td class="p-3 text-cyan-400 font-bold">${record.manifest_id}</td>
+          <td class="p-3 text-white">${record.medicine}</td>
+          <td class="p-3 text-emerald-400 font-bold">${record.quantity}</td>
+          <td class="p-3 text-slate-300">${record.donor}</td>
+          <td class="p-3 text-rose-300 font-semibold">${record.recipient}</td>
+          <td class="p-3 text-slate-400">${record.vehicle.split('(')[0]}</td>
+          <td class="p-3 text-amber-400">${record.eta}</td>
+          <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800">IN-TRANSIT</span></td>
+        </tr>
+      ` + tbody.innerHTML;
+
+      document.getElementById('dispatched-count-badge').innerText = '1 Active Dispatch In-Flight';
+    }
+
+    // Load Predictive Forecasting Charts
+    async function loadForecastData() {
+      const phcSelect = document.getElementById('forecast-phc-select').value;
+      try {
+        const res = await fetch(`/api/forecast?facility_id=${phcSelect}`);
+        const data = await res.json();
+        renderForecastCharts(data.curves);
+      } catch (err) {
+        console.error("Error loading forecast:", err);
+      }
+    }
+
+    function renderForecastCharts(curves) {
+      const c1 = curves[0]; // Antivenom
+      const c2 = curves[1]; // Paracetamol IV
+
+      const labels = c1.timeline.map(t => t.day);
+
+      // Destroy old charts
+      if (chartAntivenomInstance) chartAntivenomInstance.destroy();
+      if (chartParacetamolInstance) chartParacetamolInstance.destroy();
+
+      const ctx1 = document.getElementById('chartAntivenom').getContext('2d');
+      chartAntivenomInstance = new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Current Trajectory (Depleted Tomorrow)',
+              data: c1.timeline.map(t => t.current_trajectory),
+              borderColor: '#F43F5E',
+              backgroundColor: 'rgba(244, 63, 94, 0.1)',
+              borderWidth: 2.5,
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: 'With PulseGrid Reallocation (+40 Vials)',
+              data: c1.timeline.map(t => t.optimized_trajectory),
+              borderColor: '#10B981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              borderWidth: 2.5,
+              tension: 0.3,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: '#182542' }, ticks: { color: '#94A3B8', font: { family: 'JetBrains Mono', size: 10 } } },
+            y: { grid: { color: '#182542' }, ticks: { color: '#94A3B8', font: { family: 'JetBrains Mono', size: 10 } } }
+          }
+        }
+      });
+
+      const ctx2 = document.getElementById('chartParacetamol').getContext('2d');
+      chartParacetamolInstance = new Chart(ctx2, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Without Transfer',
+              data: c2.timeline.map(t => t.current_trajectory),
+              borderColor: '#F43F5E',
+              borderWidth: 2.5,
+              tension: 0.3
+            },
+            {
+              label: 'Optimized Buffer',
+              data: c2.timeline.map(t => t.optimized_trajectory),
+              borderColor: '#06B6D4',
+              backgroundColor: 'rgba(6, 182, 212, 0.1)',
+              borderWidth: 2.5,
+              tension: 0.3,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: '#182542' }, ticks: { color: '#94A3B8', font: { family: 'JetBrains Mono', size: 10 } } },
+            y: { grid: { color: '#182542' }, ticks: { color: '#94A3B8', font: { family: 'JetBrains Mono', size: 10 } } }
+          }
+        }
+      });
+    }
+
+    // Load BRICS Federated Mesh Data
+    async function loadFederatedMesh() {
+      try {
+        const res = await fetch('/api/federated/mesh');
+        const data = await res.json();
+        document.getElementById('stat-brics-acc').innerText = `${data.convergence_accuracy_percent}%`;
+        document.getElementById('mesh-round-counter').innerText = `#${data.current_round}`;
+
+        const nodesContainer = document.getElementById('brics-nodes-container');
+        nodesContainer.innerHTML = '';
+
+        data.nodes.forEach(node => {
+          nodesContainer.innerHTML += `
+            <div class="p-4 rounded-xl bg-grid-800 border border-grid-750 flex flex-col justify-between space-y-3">
+              <div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-extrabold text-white">${node.country_name} (${node.country_code})</span>
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                </div>
+                <p class="text-[11px] text-cyan-400 font-mono mt-0.5">${node.grid_name}</p>
+                <div class="mt-3 space-y-1 text-xs font-mono text-slate-300">
+                  <div class="flex justify-between"><span class="text-slate-400">PHC Nodes:</span><span>${node.active_phc_nodes.toLocaleString()}</span></div>
+                  <div class="flex justify-between"><span class="text-slate-400">Monitored Pop:</span><span>${node.population_monitored}</span></div>
+                  <div class="flex justify-between"><span class="text-slate-400">Local Loss:</span><span class="text-emerald-400">${node.local_loss}</span></div>
+                  <div class="flex justify-between"><span class="text-slate-400">Privacy Budget ε:</span><span>${node.differential_privacy_budget_spent}</span></div>
+                </div>
+              </div>
+              <div class="p-2 rounded-lg bg-grid-850 text-[10px] text-slate-400 border border-grid-750">
+                <span class="text-amber-400 font-bold">Vector:</span> ${node.shared_outbreak_vector}
+              </div>
+            </div>
+          `;
+        });
+
+        const insightsContainer = document.getElementById('brics-insights-container');
+        insightsContainer.innerHTML = '';
+        data.shared_cross_border_insights.forEach(ins => {
+          insightsContainer.innerHTML += `
+            <div class="p-3.5 rounded-xl bg-grid-850 border border-grid-750 text-xs space-y-1.5">
+              <div class="flex items-center justify-between font-mono text-[11px]">
+                <span class="text-cyan-400 font-bold">${ins.source_mesh} ➔ ${ins.target_benefit}</span>
+                <span class="text-emerald-400">Confidence: ${Math.round(ins.confidence_score * 100)}%</span>
+              </div>
+              <p class="text-slate-200 leading-relaxed">${ins.observation}</p>
+              <p class="text-emerald-300 font-medium">💡 Recommendation: ${ins.actionable_recommendation}</p>
+            </div>
+          `;
+        });
+
+        lucide.createIcons();
+      } catch (err) {
+        console.error("Error loading BRICS mesh:", err);
+      }
+    }
+
+    async function triggerFederatedRound() {
+      try {
+        const res = await fetch('/api/federated/round', { method: 'POST' });
+        const result = await res.json();
+        alert(`✓ ${result.message}`);
+        loadFederatedMesh();
+      } catch (err) {
+        console.error("Failed to trigger federated round:", err);
+      }
+    }
+
+    // Gemini 3.8 Flash Copilot Logic
+    function setQuery(text) {
+      document.getElementById('copilot-input').value = text;
+      submitQuery(new Event('submit'));
+    }
+
+    async function submitQuery(e) {
+      e.preventDefault();
+      const input = document.getElementById('copilot-input');
+      const query = input.value.trim();
+      if (!query) return;
+
+      const chatContainer = document.getElementById('chat-messages');
+
+      // Append User message
+      chatContainer.innerHTML += `
+        <div class="flex items-start justify-end space-x-3">
+          <div class="bg-blue-600 p-4 rounded-2xl rounded-tr-none text-white max-w-[85%] text-xs leading-relaxed font-sans shadow-md">
+            ${query}
+          </div>
+          <div class="w-8 h-8 rounded-lg bg-blue-700 flex-shrink-0 flex items-center justify-center font-bold text-white text-xs">
+            YOU
+          </div>
+        </div>
+      `;
+
+      input.value = '';
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+
+      // Append Loading message
+      const loadingId = 'loading-' + Date.now();
+      chatContainer.innerHTML += `
+        <div id="${loadingId}" class="flex items-start space-x-3">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-blue-500 flex-shrink-0 flex items-center justify-center">
+            <i data-lucide="sparkles" class="w-4 h-4 text-white animate-spin"></i>
+          </div>
+          <div class="bg-grid-800 p-4 rounded-2xl rounded-tl-none border border-grid-750 text-slate-400 italic">
+            Gemini 3.8 Flash is triaging real-time telemetry and optimizing dispatch...
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+
+      try {
+        const res = await fetch('/api/gemini/triage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: query, facility_id: selectedFacilityId })
+        });
+        const data = await res.json();
+
+        const loadingEl = document.getElementById(loadingId);
+        if (loadingEl) loadingEl.remove();
+
+        // Convert basic markdown to html
+        let formatted = data.analysis
+          .replace(/### (.*)/g, '<h4 class="text-sm font-bold text-cyan-400 mt-2 mb-1">$1</h4>')
+          .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
+          .replace(/\* (.*)/g, '<li class="ml-4 list-disc">$1</li>')
+          .replace(/\n/g, '<br>');
+
+        chatContainer.innerHTML += `
+          <div class="flex items-start space-x-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-blue-500 flex-shrink-0 flex items-center justify-center">
+              <i data-lucide="bot" class="w-4 h-4 text-white"></i>
+            </div>
+            <div class="bg-grid-800 p-4 rounded-2xl rounded-tl-none border border-grid-750 max-w-[85%] text-slate-200 leading-relaxed font-sans space-y-2">
+              <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 border-b border-grid-700 pb-1 mb-2">
+                <span>Source: ${data.source}</span>
+                <span class="text-emerald-400 font-bold">STATUS: ${data.status}</span>
+              </div>
+              <div class="text-xs leading-relaxed space-y-1">
+                ${formatted}
+              </div>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+
+      } catch (err) {
+        console.error("Gemini triage error:", err);
+      }
+    }
+
+    function requestEmergencyTriage() {
+      switchTab('copilot');
+      setQuery(`Generate emergency triage brief and cross-district redistribution manifest for facility ${selectedFacilityId}`);
+    }
+
+    // App Initialization
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+
+      // Check session
+      const savedUser = localStorage.getItem('pulsegrid_user');
+      if (savedUser) {
+        try {
+          const userObj = JSON.parse(savedUser);
+          applyUserSession(userObj);
+          document.getElementById('login-view').classList.add('hidden');
+          document.getElementById('app-workspace').classList.remove('hidden');
+          initMap();
+          fetchNetworkData();
+          loadRedistributionPlan();
+          loadFederatedMesh();
+          return;
+        } catch (e) {
+          console.error("Session parse error:", e);
+        }
+      }
+
+      // Default: show login view, hide workspace
+      selectRole('district');
+      document.getElementById('login-view').classList.remove('hidden');
+      document.getElementById('app-workspace').classList.add('hidden');
+    });
+  </script>
+</body>
+</html>
